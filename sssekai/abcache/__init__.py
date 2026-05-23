@@ -292,7 +292,13 @@ class AbCache(Session):
                     return "https://%s" % url
                 return "https://production-game-api.sekai.colorfulpalette.org"
             case "en":
-                return f"https://n-{self.SEKAI_API_PROFILE}-game-api.sekai-en.com"
+                if self.database.sekai_gameversion_data:
+                    url = self.database.sekai_gameversion_data.domain
+                    url = url.replace(
+                        "{0}", self.database.sekai_gameversion_data.profile
+                    )
+                    return "https://%s" % url
+                return f"https://n-production-game-api.sekai-en.com"
             case "tw":
                 return "https://mk-zian-obt-cdn.bytedgame.com"
             case "kr":

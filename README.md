@@ -25,8 +25,8 @@ sssekai-gui
 See the [wiki page!](https://github.com/mos9527/sssekai/wiki)
 
 # See Also
-https://github.com/mos9527/sssekai_blender_io
-https://github.com/mos9527/sssekai 
+- https://github.com/mos9527/sssekai_blender_io
+- https://github.com/mos9527/sssekai 
 
 # License
 MIT
