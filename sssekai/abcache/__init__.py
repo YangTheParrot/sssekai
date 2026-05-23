@@ -75,6 +75,7 @@ class AbCacheConfig:
     app_hash: str
 
     auth_credential: str = None  # JWT token for JP/EN, Base64 encoded JWT token for ROW
+    auth_device_id: str = None  # Optional device ID for authentication. Can be used to bypass some transfer restrictions
 
     row_ab_version: str = None  # Override AB version in url for ROW
 
@@ -475,6 +476,14 @@ class AbCache(Session):
             if self.database.sekai_user_data
             else None
         )
+        
+    @property
+    def SEKAI_DEVICE_ID(self):
+        return self.config.auth_device_id or (
+            self.database.sekai_user_auth_data.deviceId
+            if self.database.sekai_user_auth_data
+            else None
+        )
 
     @property
     def is_authenticated(self):
@@ -601,7 +610,7 @@ class AbCache(Session):
                 resp = self.request_packed(
                     "PUT",
                     self.SEKAI_API_USER_AUTH,
-                    data={"credential": self.SEKAI_CREDENTIAL, "deviceId": None},
+                    data={"credential": self.SEKAI_CREDENTIAL, "deviceId": self.SEKAI_DEVICE_ID},
                 )
             else:
                 resp = self.request_packed(
@@ -609,7 +618,7 @@ class AbCache(Session):
                     self.SEKAI_API_USER_AUTH,
                     data={
                         "accessToken": self.SEKAI_CREDENTIAL,
-                        "deviceId": None,
+                        "deviceId": self.SEKAI_DEVICE_ID,
                         "userID": 0,
                     },
                 )
