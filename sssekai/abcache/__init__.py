@@ -326,7 +326,7 @@ class AbCache(Session):
                 return "https://lf16-mkovscdn-sg.bytedgame.com/obj/sf-game-alisg/gdl_app_5245"
             case "kr":
                 return (
-                    "https://lf19-mkkr.bytedgame.com/obj/sf-game-alisg/gdl_app_292248"
+                    "https://lf16-mkkr.bytedgame.com/obj/sf-game-alisg/gdl_app_292248"
                 )
             case "cn":
                 return "https://lf3-mkcncdn-tos.dailygn.com/obj/sf-game-lf/gdl_app_5236"
@@ -364,7 +364,7 @@ class AbCache(Session):
                 return f"https://{self.SEKAI_API_PROFILE}-{self.SEKAI_AB_HOST_HASH}-assetbundle-info.sekai.colorfulpalette.org/api/version/{self.SEKAI_ASSET_VERSION}/{self.SEKAI_AB_HASH}/os/{self.config.app_platform}"
             case "en":
                 # `n` for what, exactly?                
-                return f"https://n-{self.SEKAI_API_PROFILE}-{self.SEKAI_AB_HOST_HASH}-assetbundle-info.sekai-en.com/api/version/{self.SEKAI_ASSET_VERSION}/os/{self.config.app_platform}"
+                return f"https://n-{self.SEKAI_API_PROFILE}-{self.SEKAI_AB_HOST_HASH}-assetbundle-info.sekai-en.com/api/version/{self.SEKAI_ASSET_VERSION}/{self.SEKAI_AB_HASH}/os/{self.config.app_platform}"
         if self.config.app_region in REGION_ROW:
             return f"{self.SEKAI_AB_ROW_CDN}/AssetBundle/{self.SEKAI_AB_ROW_VERSION}/Release/{self.SEKAI_AB_ROW_PATH}/{self.SEKAI_APP_PLATFORM}{self.SEKAI_AB_ROW_VERSION_NUMBER}/AssetBundleInfoNew.json"
         else:
