@@ -577,16 +577,24 @@ class AbCache(Session):
             data = encrypt(data, SEKAI_APIMANAGER_KEYSETS[self.config.app_region])
         resp = self.request(method=method, url=url, data=data, **kwargs)
         if 400 <= resp.status_code < 600:
-            logger.error(f"{method} {url} {resp.status_code}")
-            try:  # log the error message provided by the API.
-                content = self.response_to_dict(resp)
-                logger.error("response=%s" % content)
+            try: 
+                self.update_client_headers()
             except:
-                logger.error("response=%s" % resp.content)
-            logger.error(
-                "Unexpected server-side error. Refer to https://github.com/mos9527/sssekai/wiki#debugging-abcache for more information."
-            )
-            resp.raise_for_status()
+                logger.error(f"{method} {url} {resp.status_code}")
+                try:  # log the error message provided by the API.
+                    content = self.response_to_dict(resp)
+                    logger.error("response=%s" % content)
+                except:
+                    logger.error("response=%s" % resp.content)
+                logger.error(
+                    "Unexpected server-side error. Refer to https://github.com/mos9527/sssekai/wiki#debugging-abcache for more information."
+                )
+                resp.raise_for_status()
+        self.headers.update(
+            {
+                "X-Session-Token": resp.headers.get("X-Session-Token", self.headers.get("X-Session-Token", "")),
+            }
+        )
         return resp
 
     def response_to_dict(self, resp: Response, **kwargs):
