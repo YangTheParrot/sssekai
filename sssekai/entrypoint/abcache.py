@@ -128,6 +128,7 @@ def main_abcache(args):
         config.asset_host = args.app_asset_host
         config.asset_version = args.app_asset_version
         config.auth_credential = args.auth_credential
+        config.auth_device_id = args.auth_device_id
 
     if args.proxy:
         logger.info("Overriding proxy: %s", args.proxy)

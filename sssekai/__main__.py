@@ -298,6 +298,12 @@ This crypto applies to:
         help="Credential for API authentication. Can be omitted on JP/EN servers, in which case a guest account would be automatically registered and used.",
         default=None,
     )
+    group.add_argument(
+        "--auth-device-id",
+        type=str,
+        help="Device ID for authentication. Can be used to bypass some transfer restrictions.",
+        default=None,
+    )
     abcache_parser.set_defaults(func=main_abcache)
     abserve_parser = subparsers.add_parser(
         "abserve", usage="""AbCache Filesystem Server / Backend"""
