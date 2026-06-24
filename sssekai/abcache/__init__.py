@@ -604,7 +604,7 @@ class AbCache(Session):
             # within update_client_headers can't recurse back into this branch, and by
             # `_allow_reauth` so that the single retry below won't reauth a second time.
             if (
-                resp.status_code == 403
+                resp.status_code == 403 or resp.status_code == 426
                 and _allow_reauth
                 and not self._reauthenticating
             ):
