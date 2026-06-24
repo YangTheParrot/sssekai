@@ -550,18 +550,33 @@ class AbCache(Session):
     def abcache_index(self):
         return self.database.sekai_abcache_index
 
-    def request_packed(self, method: str, url: str, data: dict = None, **kwargs):
+    def request_packed(
+        self,
+        method: str,
+        url: str,
+        data: dict = None,
+        _allow_reauth: bool = True,
+        **kwargs,
+    ):
         """Send a request with packed data. Data will be packed and encrypted before sending.
+
+        On a 403 (Forbidden) response a single reauthentication attempt is made via
+        `update_client_headers` (which refreshes signatures/cookies and user auth data),
+        after which the original request is retried once. Any other 4xx/5xx error
+        (e.g. 503 maintenance) is raised immediately without reauthenticating.
 
         Args:
             method (str): HTTP method
             url (str): URL
             data (dict, optional): Payload data. Defaults to None.
+            _allow_reauth (bool, optional): Whether a 403 should trigger a reauth+retry.
+                Internal use only; disabled on the retried request to avoid loops.
 
         Returns:
             Response: Response object
         """
         self._update_request_headers()
+        packed = data
         if data is not None:
             # XXX: packb() does not cover all cases.
             #
@@ -579,23 +594,43 @@ class AbCache(Session):
             # In the *current* API seen in the game binary, this is fine. And in AbCache's case floats are not at all used.
             # But this may change in the future, in which case consult the following issues:
             #   https://github.com/msgpack/msgpack-python/issues/326
-            data = packb(data, use_single_float=True)
-            data = encrypt(data, SEKAI_APIMANAGER_KEYSETS[self.config.app_region])
-        resp = self.request(method=method, url=url, data=data, **kwargs)
+            packed = packb(data, use_single_float=True)
+            packed = encrypt(packed, SEKAI_APIMANAGER_KEYSETS[self.config.app_region])
+        resp = self.request(method=method, url=url, data=packed, **kwargs)
         if 400 <= resp.status_code < 600:
-            try: 
-                self.update_client_headers()
-            except:
-                logger.error(f"{method} {url} {resp.status_code}")
-                try:  # log the error message provided by the API.
-                    content = self.response_to_dict(resp)
-                    logger.error("response=%s" % content)
-                except:
-                    logger.error("response=%s" % resp.content)
-                logger.error(
-                    "Unexpected server-side error. Refer to https://github.com/mos9527/sssekai/wiki#debugging-abcache for more information."
+            # A 403 typically means our signatures/cookies or session token have expired.
+            # Attempt to reauthenticate once and retry the original request. Reauth is
+            # gated by `self._reauthenticating` so that the request_packed calls made
+            # within update_client_headers can't recurse back into this branch, and by
+            # `_allow_reauth` so that the single retry below won't reauth a second time.
+            if (
+                resp.status_code == 403
+                and _allow_reauth
+                and not self._reauthenticating
+            ):
+                logger.warning(
+                    f"{method} {url} {resp.status_code}: reauthenticating and retrying once."
                 )
-                resp.raise_for_status()
+                self._reauthenticating = True
+                try:
+                    self.update_client_headers()
+                finally:
+                    self._reauthenticating = False
+                return self.request_packed(
+                    method, url, data=data, _allow_reauth=False, **kwargs
+                )
+            # Any other error (e.g. 503 maintenance) is not recoverable here. Log the
+            # server-provided message if available and raise immediately.
+            logger.error(f"{method} {url} {resp.status_code}")
+            try:  # log the error message provided by the API.
+                content = self.response_to_dict(resp)
+                logger.error("response=%s" % content)
+            except:
+                logger.error("response=%s" % resp.content)
+            logger.error(
+                "Unexpected server-side error. Refer to https://github.com/mos9527/sssekai/wiki#debugging-abcache for more information."
+            )
+            resp.raise_for_status()
         self.headers.update(
             {
                 "X-Session-Token": resp.headers.get("X-Session-Token", self.headers.get("X-Session-Token", "")),
@@ -669,6 +704,7 @@ class AbCache(Session):
 
     def __init__(self, config: Optional[AbCacheConfig] = None):
         super().__init__()
+        self._reauthenticating = False
         self.database = SSSekaiDatabase()
         self.config = config or AbCacheConfig(
             "unknown", "unknown", "unknown", "unknown"
