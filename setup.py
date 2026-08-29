@@ -37,5 +37,5 @@ setuptools.setup(
         ],
         "fsspec.specs": ["abcache = sssekai.abcache.fs.AbCacheFilesystem"],
     },
-    python_requires=">=3.10",
+    python_requires=">=3.14",
 )

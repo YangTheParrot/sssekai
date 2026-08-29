@@ -1,11 +1,11 @@
 from collections import defaultdict
 from pickle import load, dump
-from typing import BinaryIO, List, Mapping, Optional, Union, Tuple
+from typing import BinaryIO, List, Mapping, Optional, Union, Tuple, get_args, get_origin
 from logging import getLogger
 from dataclasses import dataclass, fields, is_dataclass, field
 from functools import cached_property
 from base64 import b64encode, b64decode
-import json
+import json, types
 
 logger = getLogger("sssekai.abcache")
 
@@ -21,8 +21,17 @@ def fromdict(klass: type, d: Union[Mapping, List], warn_missing_fields=True):
     https://gist.github.com/gatopeich/1efd3e1e4269e1e98fae9983bb914f22
     """
 
-    while klass.__name__ == "Optional":
-        klass = klass.__args__[0]  # Reduce Optional[T] -> T
+    # Reduce Optional[T] -> T
+    # XXX: Matching on `klass.__name__ == "Optional"` breaks on Python 3.14+.
+    # Per PEP 604, typing.Union is now an alias of types.UnionType there, so
+    # Optional[T].__name__ reads 'Union' and the reduction silently never happens
+    # (which then IndexErrors on `__args__[1]` for Optional[List[T]] fields).
+    # Match on the origin instead, which behaves the same on 3.10 through 3.14+.
+    while get_origin(klass) in (Union, types.UnionType):
+        args = [arg for arg in get_args(klass) if arg is not type(None)]
+        if len(args) != 1:
+            break  # Not an Optional[T] -- a genuine multi-member Union
+        klass = args[0]
 
     def ensure_iterable(d):
         if isinstance(d, Mapping):
