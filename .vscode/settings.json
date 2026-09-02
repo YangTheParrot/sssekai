@@ -1,3 +1,4 @@
 {
-    "austin.mode": "Wall time"
+    "austin.mode": "Wall time",
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }
